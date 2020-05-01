@@ -48,63 +48,67 @@ type AttributeRequest struct {
 
 func toAttributes(doc Document, did string) map[string]AttributeRequest {
 	attrs := map[string]AttributeRequest{
-		"Document ID": AttributeRequest{
+		"reference_id": {
 			Type:  "string",
 			Value: doc.ReferenceID,
 		},
-		"AssetIdentifier": AttributeRequest{
-			Type:  "bytes",
-			Value: doc.DocumentID,
+		"invoice_nr": {
+			Type:  "string",
+			Value: doc.InvoiceNumber,
 		},
-		"Transaction Type": AttributeRequest{
+		"AssetIdentifier": {
+			Type:  "bytes",
+			Value: doc.AssetIdentifier,
+		},
+		"transaction_type": {
 			Type:  "string",
 			Value: doc.TransactionType,
 		},
-		"Entity Number": AttributeRequest{
+		"entity_nr": {
 			Type:  "integer",
 			Value: strconv.Itoa(doc.EntityNumber),
 		},
-		"Entity Name": AttributeRequest{
+		"entity_name": {
 			Type:  "string",
 			Value: doc.EntityName,
 		},
-		"Payee": AttributeRequest{
+		"payee": {
 			Type:  "string",
 			Value: doc.Payee,
 		},
-		"Payor": AttributeRequest{
+		"payor": {
 			Type:  "string",
 			Value: doc.Payor,
 		},
-		"Invoice amount": AttributeRequest{
+		"invoice_amount": {
 			Type:  "decimal",
 			Value: doc.InvoiceAmount,
 		},
-		"Currency": AttributeRequest{
+		"currency": {
 			Type:  "string",
 			Value: doc.InvoiceCurrency,
 		},
-		"Payment Terms": AttributeRequest{
+		"payment_terms": {
 			Type:  "integer",
 			Value: strconv.Itoa(doc.PaymentTerms),
 		},
-		"Invoice Date": AttributeRequest{
+		"invoice_date": {
 			Type:  "timestamp",
 			Value: doc.InvoiceDate.Format(time.RFC3339Nano),
 		},
-		"MaturityDate": AttributeRequest{
+		"MaturityDate": {
 			Type:  "timestamp",
 			Value: doc.DueDate.Format(time.RFC3339Nano),
 		},
-		"Risk Score": AttributeRequest{
+		"risk_score": {
 			Type:  "string",
 			Value: doc.RiskScore,
 		},
-		"AssetValue": AttributeRequest{
+		"AssetValue": {
 			Type:  "decimal",
 			Value: doc.CollateralValue,
 		},
-		"Originator": AttributeRequest{
+		"Originator": {
 			Type:  "bytes",
 			Value: did,
 		},

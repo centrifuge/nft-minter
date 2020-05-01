@@ -9,6 +9,7 @@ import (
 type Document struct {
 	DocumentID      string
 	ReferenceID     string
+	AssetIdentifier string
 	InvoiceNumber   string
 	TransactionType string
 	EntityNumber    int
@@ -26,30 +27,31 @@ type Document struct {
 }
 
 func toDocument(row []string) Document {
-	entityNo, err := strconv.Atoi(row[3])
+	entityNo, err := strconv.Atoi(row[4])
 	checkErr(err)
-	pt, err := strconv.Atoi(row[9])
+	pt, err := strconv.Atoi(row[10])
 	checkErr(err)
-	id, err := time.Parse("1/2/2006", row[10])
+	id, err := time.Parse("1/2/2006", row[11])
 	checkErr(err)
-	dd, err := time.Parse("1/2/2006", row[11])
+	dd, err := time.Parse("1/2/2006", row[12])
 	checkErr(err)
-	row[8] = strings.ReplaceAll(row[8], ",", "")
-	row[13] = strings.ReplaceAll(row[13], ",", "")
+	row[9] = strings.ReplaceAll(row[9], ",", "")
+	row[14] = strings.ReplaceAll(row[14], ",", "")
 	return Document{
 		ReferenceID:     row[0],
-		InvoiceNumber:   row[1],
-		TransactionType: row[2],
+		AssetIdentifier: row[1],
+		InvoiceNumber:   row[2],
+		TransactionType: row[3],
 		EntityNumber:    entityNo,
-		EntityName:      row[4],
-		Payee:           row[5],
-		Payor:           row[6],
-		InvoiceCurrency: row[7],
-		InvoiceAmount:   row[8],
+		EntityName:      row[5],
+		Payee:           row[6],
+		Payor:           row[7],
+		InvoiceCurrency: row[8],
+		InvoiceAmount:   row[9],
 		PaymentTerms:    pt,
 		InvoiceDate:     id,
 		DueDate:         dd,
-		RiskScore:       row[12],
-		CollateralValue: row[13],
+		RiskScore:       row[13],
+		CollateralValue: row[14],
 	}
 }
