@@ -52,6 +52,10 @@ func toAttributes(doc Document, did string) map[string]AttributeRequest {
 			Type:  "string",
 			Value: doc.ReferenceID,
 		},
+		"_schema": {
+			Type: "string",
+			Value: doc.SchemaName,
+		},
 		"invoice_nr": {
 			Type:  "string",
 			Value: doc.InvoiceNumber,
