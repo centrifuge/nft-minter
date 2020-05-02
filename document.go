@@ -22,6 +22,7 @@ type Document struct {
 	InvoiceDate     time.Time
 	DueDate         time.Time
 	RiskScore       string
+	SchemaName		string
 	CollateralValue string
 	NFTToken        string
 }
@@ -53,5 +54,6 @@ func toDocument(row []string) Document {
 		DueDate:         dd,
 		RiskScore:       row[13],
 		CollateralValue: row[14],
+		SchemaName: row[15],
 	}
 }
