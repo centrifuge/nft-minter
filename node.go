@@ -7,178 +7,27 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func fetchSigningKey(url, id string) (string, error) {
-	url = fmt.Sprintf("%s/v1/accounts/%s", url, id)
-	res, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-
-	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-	var response struct {
-		SigningKeyPair struct {
-			Pub string `json:"pub"`
-		} `json:"signing_key_pair"`
-	}
-	err = json.Unmarshal(data, &response)
-	if err != nil {
-		return "", err
-	}
-
-	return response.SigningKeyPair.Pub, nil
-}
-
-type AttributeRequest struct {
-	Type  string `json:"type" enums:"integer,decimal,string,bytes,timestamp,monetary"`
-	Value string `json:"value"`
-}
-
-func toAttributes(doc Document, did string) map[string]AttributeRequest {
-	attrs := map[string]AttributeRequest{
-		"reference_id": {
-			Type:  "string",
-			Value: doc.ReferenceID,
-		},
-		"_schema": {
-			Type: "string",
-			Value: doc.SchemaName,
-		},
-		"invoice_nr": {
-			Type:  "string",
-			Value: doc.InvoiceNumber,
-		},
-		"AssetIdentifier": {
-			Type:  "bytes",
-			Value: doc.AssetIdentifier,
-		},
-		"transaction_type": {
-			Type:  "string",
-			Value: doc.TransactionType,
-		},
-		"entity_nr": {
-			Type:  "integer",
-			Value: strconv.Itoa(doc.EntityNumber),
-		},
-		"entity_name": {
-			Type:  "string",
-			Value: doc.EntityName,
-		},
-		"payee": {
-			Type:  "string",
-			Value: doc.Payee,
-		},
-		"payor": {
-			Type:  "string",
-			Value: doc.Payor,
-		},
-		"invoice_amount": {
-			Type:  "decimal",
-			Value: doc.InvoiceAmount,
-		},
-		"currency": {
-			Type:  "string",
-			Value: doc.InvoiceCurrency,
-		},
-		"payment_terms": {
-			Type:  "integer",
-			Value: strconv.Itoa(doc.PaymentTerms),
-		},
-		"invoice_date": {
-			Type:  "timestamp",
-			Value: doc.InvoiceDate.Format(time.RFC3339Nano),
-		},
-		"MaturityDate": {
-			Type:  "timestamp",
-			Value: doc.DueDate.Format(time.RFC3339Nano),
-		},
-		"risk_score": {
-			Type:  "string",
-			Value: doc.RiskScore,
-		},
-		"AssetValue": {
-			Type:  "decimal",
-			Value: doc.CollateralValue,
-		},
-		"Originator": {
-			Type:  "bytes",
-			Value: did,
-		},
-	}
-
-	return attrs
-}
-
-func createDocument(doc Document, config Config) (Document, error) {
-	url := fmt.Sprintf("%s/v2/documents", config.NodeURL)
-	doc, err := updateDocument(doc, url, "POST", config, false, http.StatusCreated, false)
-	if err != nil {
-		return Document{}, err
-	}
-
-	url = fmt.Sprintf("%s/v2/documents/%s", config.NodeURL, doc.DocumentID)
-	doc, err = updateDocument(doc, url, "PATCH", config, true, http.StatusOK, false)
-	if err != nil {
-		return Document{}, err
-	}
-
-	url = fmt.Sprintf("%s/v2/documents/%s/commit", config.NodeURL, doc.DocumentID)
-	doc, err = updateDocument(doc, url, "POST", config, false, http.StatusAccepted, true)
-	return doc, err
-}
-
-func updateDocument(doc Document, url string, method string, config Config, patch bool, status int, commit bool) (Document, error) {
+func createDocument(id, nodeURL, docID string, attrs map[string]AttributeRequest) (string, error) {
 	payload := map[string]interface{}{
-		"scheme": "generic",
-		"data":   map[string]interface{}{},
-	}
-
-	if patch {
-		payload["attributes"] = toAttributes(doc, config.CentrifugeID)
+		"scheme":      "generic",
+		"data":        map[string]interface{}{},
+		"document_id": docID,
+		"attributes":  attrs,
 	}
 
 	d, err := json.Marshal(payload)
 	if err != nil {
-		return Document{}, err
+		return "", err
 	}
 
-	var r io.Reader
-	r = bytes.NewReader(d)
-	if commit {
-		r = nil
-	}
-
-	req, err := http.NewRequest(method, url, r)
-	if err != nil {
-		return Document{}, err
-	}
-
-	req.Header.Add("authorization", config.CentrifugeID)
-	req.Header.Add("accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	c := http.Client{}
-	res, err := c.Do(req)
-	if err != nil {
-		return Document{}, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != status {
-		return Document{}, fmt.Errorf("unexpected status code: %d", res.StatusCode)
-	}
-
+	url := fmt.Sprintf("%s/v2/documents", nodeURL)
 	var response struct {
 		Header struct {
 			JobID      string `json:"job_id"`
@@ -186,21 +35,128 @@ func updateDocument(doc Document, url string, method string, config Config, patc
 		}
 	}
 
+	err = makeCall(id, url, "POST", http.StatusCreated, bytes.NewReader(d), &response)
+	return response.Header.DocumentID, err
+}
+
+func commitDocument(id, nodeURL, docID string) error {
+	var response struct {
+		Header struct {
+			JobID      string `json:"job_id"`
+			DocumentID string `json:"document_id"`
+		}
+	}
+	url := fmt.Sprintf("%s/v2/documents/%s/commit", nodeURL, docID)
+	err := makeCall(id, url, "POST", http.StatusAccepted, nil, &response)
+	if err != nil {
+		return err
+	}
+	return waitForTransactionSuccess(nodeURL, id, response.Header.JobID)
+}
+
+func createRole(alice, bob, docID, nodeURL string) (roleID string, err error) {
+	url := fmt.Sprintf("%s/v2/documents/%s/roles", nodeURL, docID)
+	d, err := json.Marshal(map[string]interface{}{
+		"collaborators": []string{bob},
+		"key":           "random_key",
+	})
+	if err != nil {
+		return roleID, err
+	}
+
+	var response struct {
+		ID string `json:"id"`
+	}
+
+	err = makeCall(alice, url, "POST", http.StatusOK, bytes.NewReader(d), &response)
+	return response.ID, err
+}
+
+func createComputeRule(id, nodeURL, docID, roleID, file string) error {
+	url := fmt.Sprintf("%s/v2/documents/%s/transition_rules", nodeURL, docID)
+	wasm, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	d, err := json.Marshal(map[string][]map[string]interface{}{
+		"compute_fields_rules": {
+			{
+				"wasm":                   hexutil.Encode(wasm),
+				"attribute_labels":       []string{"value1", "value2", "value3"},
+				"target_attribute_label": "result",
+			},
+		},
+		"attribute_rules": {
+			{
+				"key_label": "value1",
+				"role_id":   roleID,
+			},
+			{
+				"key_label": "value2",
+				"role_id":   roleID,
+			},
+			{
+				"key_label": "value3",
+				"role_id":   roleID,
+			},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return makeCall(id, url, "POST", http.StatusOK, bytes.NewReader(d), &struct{}{})
+}
+
+func fetchAttribute(id, docID, nodeURL, attr string) (string, error) {
+	url := fmt.Sprintf("%s/v1/documents/%s", nodeURL, docID)
+	var response struct {
+		Attributes map[string]struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"attributes"`
+	}
+
+	err := makeCall(id, url, "GET", http.StatusOK, nil, &response)
+	if err != nil {
+		return "", err
+	}
+
+	for k, a := range response.Attributes {
+		if k == attr {
+			return a.Value, nil
+		}
+	}
+
+	return "", errors.New("attribute not found")
+}
+
+func makeCall(id, url, method string, status int, reader io.Reader, response interface{}) error {
+	req, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("authorization", id)
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+	c := http.Client{}
+	res, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != status {
+		return fmt.Errorf("unexpected status code: %d", res.StatusCode)
+	}
+
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return Document{}, err
+		return err
 	}
 
-	err = json.Unmarshal(data, &response)
-	if err != nil {
-		return Document{}, err
-	}
-
-	doc.DocumentID = response.Header.DocumentID
-	if commit {
-		err = waitForTransactionSuccess(config.NodeURL, config.CentrifugeID, response.Header.JobID)
-	}
-	return doc, err
+	return json.Unmarshal(data, &response)
 }
 
 func waitForTransactionSuccess(url, did, jobID string) error {
@@ -251,91 +207,9 @@ func waitForTransactionSuccess(url, did, jobID string) error {
 	}
 }
 
-func mintNFT(doc Document, config Config) (Document, error) {
-	pfs := []string{
-		"cd_tree.attributes[0xe24e7917d4fcaf79095539ac23af9f6d5c80ea8b0d95c9cd860152bff8fdab17].byte_val",
-		"cd_tree.attributes[0xcd35852d8705a28d4f83ba46f02ebdf46daf03638b40da74b9371d715976e6dd].byte_val",
-		"cd_tree.attributes[0xbbaa573c53fa357a3b53624eb6deab5f4c758f299cffc2b0b6162400e3ec13ee].byte_val",
-		"cd_tree.attributes[0xe5588a8a267ed4c32962568afe216d4ba70ae60576a611e3ca557b84f1724e29].byte_val",
-	}
-
-	sk, err := fetchSigningKey(config.NodeURL, config.CentrifugeID)
-	if err != nil {
-		return Document{}, err
-	}
-	skb, err := hexutil.Decode(sk)
-	if err != nil {
-		return Document{}, err
-	}
-
-	idb, err := hexutil.Decode(config.CentrifugeID)
-	if err != nil {
-		return Document{}, err
-	}
-
-	pub := GetAddress(skb)
-	key := append(idb, pub[:]...)
-	pfs = append(pfs, fmt.Sprintf("%s.signatures[%s]", "signatures_tree", hexutil.Encode(key)))
-
-	url := fmt.Sprintf("%s/v1/nfts/registries/%s/mint", config.NodeURL, config.NFTRegistry)
-	payload := map[string]interface{}{
-		"asset_manager_address": config.AssetContract,
-		"deposit_address":       config.NFTDepositAddress,
-		"document_id":           doc.DocumentID,
-		"proof_fields":          pfs,
-	}
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return Document{}, err
-	}
-	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-	if err != nil {
-		return Document{}, err
-	}
-
-	req.Header.Add("authorization", config.CentrifugeID)
-	req.Header.Add("accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	res, err := new(http.Client).Do(req)
-	if err != nil {
-		return Document{}, err
-	}
-
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusAccepted {
-		return Document{}, fmt.Errorf("unexpected error: %d", res.StatusCode)
-	}
-
-	var response struct {
-		Header struct {
-			JobID string `json:"job_id"`
-		} `json:"header"`
-		TokenID string `json:"token_id"`
-	}
-	d := json.NewDecoder(res.Body)
-	err = d.Decode(&response)
-	if err != nil {
-		return Document{}, err
-	}
-
-	err = waitForTransactionSuccess(config.NodeURL, config.CentrifugeID, response.Header.JobID)
-	if err != nil {
-		return Document{}, err
-	}
-
-	doc.NFTToken = response.TokenID
-	return doc, nil
-}
-
-func GetAddress(publicKey []byte) [32]byte {
-	hash := crypto.Keccak256(publicKey[1:])
-	address := hash[12:]
-	return AddressTo32Bytes(address)
-}
-func AddressTo32Bytes(address []byte) [32]byte {
-	address32Byte := [32]byte{}
-	for i := 1; i <= common.AddressLength; i++ {
-		address32Byte[32-i] = address[common.AddressLength-i]
-	}
-	return address32Byte
+func riskAndValue(result string) (risk, value *big.Int) {
+	d := hexutil.MustDecode(result)
+	risk = new(big.Int).SetBytes(d[:16])
+	value = new(big.Int).SetBytes(d[16:])
+	return risk, value
 }
