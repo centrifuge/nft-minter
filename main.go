@@ -12,36 +12,51 @@ func main() {
 	alice := config.Accounts[0]
 	bob := config.Accounts[1]
 
-	out := make(chan bool)
-	go initScanRead(out)
+	// out := make(chan bool)
+	// go initScanRead(out)
 
-	// alice creates document
-	<-out
-	fmt.Println("Alice creating a draft document...")
-	docID, err := createDocument(alice.ID, alice.URL, "", initAttributes())
+	// alice creates template
+	// <-out
+	fmt.Println("Alice creating a template....")
+	docID, err := createDocument(alice.ID, alice.URL, nil)
 	checkErr(err)
-	fmt.Println("DocumentID:", docID)
+	fmt.Println("TemplateID:", docID)
 
 	// alice adds roles and rules
-	<-out
+	// <-out
 	fmt.Println("Alice creating compute field rules with bob as collaborator...")
 	roleID, err := createRole(alice.ID, bob.ID, docID, alice.URL)
 	checkErr(err)
 	fmt.Println("RoleID containing Bob:", roleID)
-	<-out
+	// <-out
 	err = createComputeRule(alice.ID, alice.URL, docID, roleID, "./simple_average.wasm")
 	checkErr(err)
 	fmt.Println("Alice created compute field rule")
 
-	// alice commits the document
-	<-out
-	fmt.Println("Alice committing document...")
-	err = commitDocument(alice.ID, alice.URL, docID)
+	// alice commits the template
+	// <-out
+	fmt.Println("Alice committing template...")
+	fingerprint, err := commitDocument(alice.ID, alice.URL, docID)
 	checkErr(err)
-	fmt.Println("Anchored document:", docID)
+	fmt.Println("Anchored Template:", docID)
+	fmt.Println("Template fingerprint:", fingerprint)
+
+	// alice clones template and creates a draft document
+	fmt.Println("Alice creating a document from template")
+	docID, err = cloneDocument(alice.ID, alice.URL, docID, nil)
+	checkErr(err)
+	fingerprint, err = commitDocument(alice.ID, alice.URL, docID)
+	checkErr(err)
+	docID, err = updateDocument(alice.ID, alice.URL, docID, initAttributes(alice.ID, docID))
+	checkErr(err)
+	fmt.Println("Alice committing document...")
+	fingerprint, err = commitDocument(alice.ID, alice.URL, docID)
+	checkErr(err)
+	fmt.Println("Anchored Document:", docID)
+	fmt.Println("Document fingerprint:", fingerprint)
 
 	// fetch attribute
-	<-out
+	// <-out
 	fmt.Println("Fetching Compute field result attribute...")
 	attr, err := fetchAttribute(alice.ID, docID, alice.URL, "result")
 	checkErr(err)
@@ -49,26 +64,33 @@ func main() {
 	fmt.Printf("Resultant attribute value: risk = %s value = %s\n", risk, value)
 
 	// bob updates the document
-	<-out
+	// <-out
 	fmt.Println("Bob updating the document with attributes required for compute fields...")
-	docID, err = createDocument(bob.ID, bob.URL, docID, computeAttributes())
+	docID, err = updateDocument(bob.ID, bob.URL, docID, computeAttributes())
 	checkErr(err)
 	fmt.Println("Updated document:", docID)
 
 	// bob commits the document
-	<-out
+	// <-out
 	fmt.Println("Bob committing document...")
-	err = commitDocument(bob.ID, bob.URL, docID)
+	fingerprint, err = commitDocument(bob.ID, bob.URL, docID)
 	checkErr(err)
 	fmt.Println("Anchored document:", docID)
+	fmt.Println("Document fingerprint:", fingerprint)
 
 	// fetch attribute
-	<-out
+	// <-out
 	fmt.Println("Fetching Compute field result attribute...")
 	attr, err = fetchAttribute(alice.ID, docID, alice.URL, "result")
 	checkErr(err)
 	risk, value = riskAndValue(attr)
 	fmt.Printf("Resultant attribute value: risk = %s value = %s\n", risk, value)
+
+	// mint NFT
+	fmt.Println("Alice mints NFT...")
+	token, err := mintNFT(docID, alice.ID, alice.URL, config.NFTRegistry, config.AssetRegistry, config.DepositAddress)
+	checkErr(err)
+	fmt.Println("NFT tokenID: ", token)
 }
 
 func initScanRead(out chan<- bool) {

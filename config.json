@@ -1,12 +1,15 @@
 {
   "accounts": [
     {
-      "id": "0x1C1A2eFD91541c14deaD0175DDd4577658a0BCDC",
-      "url": "http://localhost:8082"
+      "id": "0xdF4c909513fc38e4565593887423704b28CC5a82",
+      "url": "http://35.246.188.161:8082"
     },
     {
-      "id": "0xF16aaA0F9dD442e209Eb03d5267Ebb7Da804f6eA",
-      "url": "http://localhost:8083"
+      "id": "0x0b0f6Af4F9a90f72e8Aecd4887a9daD3a41C8c99",
+      "url": "http://35.246.209.16:8082"
     }
-  ]
+  ],
+  "nft_registry": "0x648f679d855d2c9db97bb1ab14f2ecdf57d5ddb4",
+  "asset_registry": "0xa0764952f9599cd0c4b3fddcac20293eee99c3e5",
+  "deposit_address": "0xdF4c909513fc38e4565593887423704b28CC5a82"
 }

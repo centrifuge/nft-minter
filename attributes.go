@@ -1,11 +1,15 @@
 package main
 
+import (
+	"time"
+)
+
 type AttributeRequest struct {
 	Type  string `json:"type" enums:"integer,decimal,string,bytes,timestamp,monetary"`
 	Value string `json:"value"`
 }
 
-func initAttributes() map[string]AttributeRequest {
+func initAttributes(id, docID string) map[string]AttributeRequest {
 	return map[string]AttributeRequest{
 		"reference_id": {
 			Type:  "string",
@@ -27,13 +31,25 @@ func initAttributes() map[string]AttributeRequest {
 			Type:  "string",
 			Value: "Daimler",
 		},
-		"invoice_amount": {
-			Type:  "decimal",
-			Value: "1000",
-		},
 		"currency": {
 			Type:  "string",
 			Value: "USD",
+		},
+		"MaturityDate": {
+			Type:  "timestamp",
+			Value: time.Now().Format(time.RFC3339Nano),
+		},
+		"AssetValue": {
+			Type:  "decimal",
+			Value: "1000",
+		},
+		"Originator": {
+			Type:  "bytes",
+			Value: id,
+		},
+		"AssetIdentifier": {
+			Type:  "bytes",
+			Value: docID,
 		},
 	}
 }

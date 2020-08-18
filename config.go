@@ -11,7 +11,10 @@ type Account struct {
 }
 
 type Config struct {
-	Accounts []Account `json:"accounts"`
+	Accounts       []Account `json:"accounts"`
+	NFTRegistry    string    `json:"nft_registry"`
+	AssetRegistry  string    `json:"asset_registry"`
+	DepositAddress string    `json:"deposit_address"`
 }
 
 func loadConfig(file string) (Config, error) {
