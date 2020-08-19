@@ -11,5 +11,7 @@
   ],
   "nft_registry": "0x648f679d855d2c9db97bb1ab14f2ecdf57d5ddb4",
   "asset_registry": "0xa0764952f9599cd0c4b3fddcac20293eee99c3e5",
-  "deposit_address": "0xdF4c909513fc38e4565593887423704b28CC5a82"
+  "deposit_address": "0xdF4c909513fc38e4565593887423704b28CC5a82",
+  "template_id": "0x72966e20f6f2b44e0a0b5e0b4e6f93136fa9c267d26e7928e15fd7cfe3d62555",
+  "fingerprint": "0x64287832d844b0b79032139e9028599b73f52e71c4b31a9ed05dbed2c8281c24"
 }

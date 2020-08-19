@@ -15,6 +15,8 @@ type Config struct {
 	NFTRegistry    string    `json:"nft_registry"`
 	AssetRegistry  string    `json:"asset_registry"`
 	DepositAddress string    `json:"deposit_address"`
+	TemplateID     string    `json:"template_id"`
+	Fingerprint    string    `json:"fingerprint"`
 }
 
 func loadConfig(file string) (Config, error) {

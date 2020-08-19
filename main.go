@@ -17,28 +17,33 @@ func main() {
 
 	// alice creates template
 	// <-out
-	fmt.Println("Alice creating a template....")
-	docID, err := createDocument(alice.ID, alice.URL, nil)
-	checkErr(err)
-	fmt.Println("TemplateID:", docID)
+	docID := config.TemplateID
+	fingerprint := config.Fingerprint
+	if docID == "" {
+		fmt.Println("Alice creating a template....")
+		docID, err = createDocument(alice.ID, alice.URL, nil)
+		checkErr(err)
+		fmt.Println("TemplateID:", docID)
 
-	// alice adds roles and rules
-	// <-out
-	fmt.Println("Alice creating compute field rules with bob as collaborator...")
-	roleID, err := createRole(alice.ID, bob.ID, docID, alice.URL)
-	checkErr(err)
-	fmt.Println("RoleID containing Bob:", roleID)
-	// <-out
-	err = createComputeRule(alice.ID, alice.URL, docID, roleID, "./simple_average.wasm")
-	checkErr(err)
-	fmt.Println("Alice created compute field rule")
+		// alice adds roles and rules
+		// <-out
+		fmt.Println("Alice creating compute field rules with bob as collaborator...")
+		roleID, err := createRole(alice.ID, bob.ID, docID, alice.URL)
+		checkErr(err)
+		fmt.Println("RoleID containing Bob:", roleID)
+		// <-out
+		err = createComputeRule(alice.ID, alice.URL, docID, roleID, "./simple_average.wasm")
+		checkErr(err)
+		fmt.Println("Alice created compute field rule")
 
-	// alice commits the template
-	// <-out
-	fmt.Println("Alice committing template...")
-	fingerprint, err := commitDocument(alice.ID, alice.URL, docID)
-	checkErr(err)
-	fmt.Println("Anchored Template:", docID)
+		// alice commits the template
+		// <-out
+		fmt.Println("Alice committing template...")
+		fingerprint, err = commitDocument(alice.ID, alice.URL, docID)
+		checkErr(err)
+	}
+
+	fmt.Println("Template ID:", docID)
 	fmt.Println("Template fingerprint:", fingerprint)
 
 	// alice clones template and creates a draft document
