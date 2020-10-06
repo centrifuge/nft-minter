@@ -43,6 +43,10 @@ func initAttributes(id, docID string) map[string]AttributeRequest {
 			Type:  "decimal",
 			Value: "1100",
 		},
+		"RiskScore": {
+			Type:  "integer",
+			Value: "1",
+		},
 		"Originator": {
 			Type:  "bytes",
 			Value: id,
