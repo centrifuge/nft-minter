@@ -41,7 +41,7 @@ func initAttributes(id, docID string) map[string]AttributeRequest {
 		},
 		"AssetValue": {
 			Type:  "decimal",
-			Value: "1000",
+			Value: "1100",
 		},
 		"Originator": {
 			Type:  "bytes",
