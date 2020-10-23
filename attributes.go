@@ -10,6 +10,7 @@ type AttributeRequest struct {
 }
 
 func initAttributes(id, docID string) map[string]AttributeRequest {
+	md := time.Now()
 	return map[string]AttributeRequest{
 		"reference_id": {
 			Type:  "string",
@@ -37,15 +38,7 @@ func initAttributes(id, docID string) map[string]AttributeRequest {
 		},
 		"MaturityDate": {
 			Type:  "timestamp",
-			Value: time.Now().Format(time.RFC3339Nano),
-		},
-		"AssetValue": {
-			Type:  "decimal",
-			Value: "1100",
-		},
-		"RiskScore": {
-			Type:  "integer",
-			Value: "1",
+			Value: md.Format(time.RFC3339Nano),
 		},
 		"Originator": {
 			Type:  "bytes",
@@ -60,17 +53,13 @@ func initAttributes(id, docID string) map[string]AttributeRequest {
 
 func computeAttributes() map[string]AttributeRequest {
 	return map[string]AttributeRequest{
-		"value1": {
-			Type:  "integer",
-			Value: "1000",
-		},
-		"value2": {
-			Type:  "integer",
-			Value: "950",
-		},
-		"value3": {
+		"AssetValue": {
 			Type:  "integer",
 			Value: "1100",
+		},
+		"RiskScore": {
+			Type:  "integer",
+			Value: "1",
 		},
 	}
 }

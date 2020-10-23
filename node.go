@@ -100,21 +100,17 @@ func createComputeRule(id, nodeURL, docID, roleID, file string) error {
 		"compute_fields_rules": {
 			{
 				"wasm":                   hexutil.Encode(wasm),
-				"attribute_labels":       []string{"RiskScore", "value1", "value2", "value3"},
+				"attribute_labels":       []string{"RiskScore", "AssetValue"},
 				"target_attribute_label": "result",
 			},
 		},
 		"attribute_rules": {
 			{
-				"key_label": "value1",
+				"key_label": "AssetValue",
 				"role_id":   roleID,
 			},
 			{
-				"key_label": "value2",
-				"role_id":   roleID,
-			},
-			{
-				"key_label": "value3",
+				"key_label": "RiskScore",
 				"role_id":   roleID,
 			},
 		},

@@ -1,17 +1,17 @@
 {
   "accounts": [
     {
-      "id": "0xdf4c909513fc38e4565593887423704b28cc5a82",
-      "url": "http://35.246.188.161:8082"
+      "id": "0x9d507de4349123e6d07db73290dc7d38222ee6df",
+      "url": "http://10.156.3.62:8082"
     },
     {
-      "id": "0x0b0f6af4f9a90f72e8aecd4887a9dad3a41c8c99",
-      "url": "http://35.246.209.16:8082"
+      "id": "0xd2fd865a920b23cd539791cd7948c53515592146",
+      "url": "http://10.156.3.62:8082"
     }
   ],
-  "nft_registry": "0x648f679d855d2c9db97bb1ab14f2ecdf57d5ddb4",
-  "asset_registry": "0xa0764952f9599cd0c4b3fddcac20293eee99c3e5",
-  "deposit_address": "0xdF4c909513fc38e4565593887423704b28CC5a82",
-  "template_id": "",
-  "fingerprint": ""
+  "nft_registry": "0xa78C17921E7E060c246AC9575B01fF0Fb29BCeaE",
+  "asset_registry": "0xaadb496bfe9dba8e2686a487479b024d9a742b96",
+  "deposit_address": "0x8CE8fC2e297F1688385Fc115A3cB104393FE3659",
+  "template_id": "0x2a041bd9014c9ea2c79d5b9d767aa98fc2e24b2a28911b28e33a8a88072a1a0e",
+  "fingerprint": "0x949a96c5d7dd13f6e0ecec4aec9c7cd24cc9b6b4688146256dc565af9a3047f0"
 }
