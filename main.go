@@ -1,62 +1,124 @@
 package main
 
 import (
-	"encoding/csv"
+	"bufio"
 	"fmt"
 	"os"
 
-	"github.com/opentracing/opentracing-go/log"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-type Response struct {
-	doc Document
-	err error
+func main() {
+	config, err := loadConfig("./config.json")
+	checkErr(err)
+	alice := config.Accounts[0]
+	bob := config.Accounts[1]
+
+	// out := make(chan bool)
+	// go initScanRead(out)
+
+	// alice creates template
+	// <-out
+	docID := config.TemplateID
+	fingerprint := config.Fingerprint
+	if docID == "" {
+		fmt.Println("Alice creating a template....")
+		docID, err = createDocument(alice.ID, alice.URL, nil)
+		checkErr(err)
+		fmt.Println("TemplateID:", docID)
+
+		// alice adds roles and rules
+		// <-out
+		fmt.Println("Alice creating compute field rules with bob as collaborator...")
+		roleID, err := createRole(alice.ID, bob.ID, docID, alice.URL)
+		checkErr(err)
+		fmt.Println("RoleID containing Bob:", roleID)
+		// <-out
+		err = createComputeRule(alice.ID, alice.URL, docID, roleID, "./simple_average.wasm")
+		checkErr(err)
+		fmt.Println("Alice created compute field rule")
+
+		// alice commits the template
+		// <-out
+		fmt.Println("Alice committing template...")
+		fingerprint, err = commitDocument(alice.ID, alice.URL, docID)
+		checkErr(err)
+	}
+
+	fmt.Println("Template ID:", docID)
+	fmt.Println("Template fingerprint:", fingerprint)
+
+	sk, err := fetchSigningKey(alice.URL, alice.ID)
+	checkErr(err)
+	skb, err := hexutil.Decode(sk)
+	checkErr(err)
+	idb, err := hexutil.Decode(alice.ID)
+	checkErr(err)
+	pub := GetAddress(skb)
+	key := append(idb, pub[:]...)
+	fmt.Println("Signature Proof:", fmt.Sprintf("%s.signatures[%s]", "signatures_tree", hexutil.Encode(key)))
+
+	if config.NFTRegistry == "" {
+		return
+	}
+
+	// alice clones template and creates a draft document
+	fmt.Println("Alice creating a document from template")
+	docID, err = cloneDocument(alice.ID, alice.URL, docID, nil)
+	checkErr(err)
+	fingerprint, err = commitDocument(alice.ID, alice.URL, docID)
+	checkErr(err)
+	docID, err = updateDocument(alice.ID, alice.URL, docID, initAttributes(alice.ID, docID))
+	checkErr(err)
+	fmt.Println("Alice committing document...")
+	fingerprint, err = commitDocument(alice.ID, alice.URL, docID)
+	checkErr(err)
+	fmt.Println("Anchored Document:", docID)
+	fmt.Println("Document fingerprint:", fingerprint)
+
+	// fetch attribute
+	// <-out
+	fmt.Println("Fetching Compute field result attribute...")
+	attr, err := fetchAttribute(alice.ID, docID, alice.URL, "result")
+	checkErr(err)
+	risk, value := riskAndValue(attr)
+	fmt.Printf("Resultant attribute value: risk = %s value = %s\n", risk, value)
+
+	// bob updates the document
+	// <-out
+	fmt.Println("Bob updating the document with attributes required for compute fields...")
+	docID, err = updateDocument(bob.ID, bob.URL, docID, computeAttributes())
+	checkErr(err)
+	fmt.Println("Updated document:", docID)
+
+	// bob commits the document
+	// <-out
+	fmt.Println("Bob committing document...")
+	fingerprint, err = commitDocument(bob.ID, bob.URL, docID)
+	checkErr(err)
+	fmt.Println("Anchored document:", docID)
+	fmt.Println("Document fingerprint:", fingerprint)
+
+	// fetch attribute
+	// <-out
+	fmt.Println("Fetching Compute field result attribute...")
+	attr, err = fetchAttribute(alice.ID, docID, alice.URL, "result")
+	checkErr(err)
+	risk, value = riskAndValue(attr)
+	fmt.Printf("Resultant attribute value: risk = %s value = %s\n", risk, value)
+
+	// mint NFT
+	fmt.Println("Alice mints NFT...")
+	token, err := mintNFT(docID, alice.ID, alice.URL, config.NFTRegistry, config.AssetRegistry, config.DepositAddress)
+	checkErr(err)
+	fmt.Println("NFT tokenID: ", token)
 }
 
-func main() {
-	args := os.Args
-	if len(args) < 3 {
-		panic("need 2 argument")
+func initScanRead(out chan<- bool) {
+	s := bufio.NewScanner(os.Stdin)
+	for {
+		out <- s.Scan()
 	}
-
-	cfile := args[1]
-	config, err := loadConfig(cfile)
-	checkErr(err)
-	file := args[2]
-	f, err := os.Open(file)
-	checkErr(err)
-	cr := csv.NewReader(f)
-	rows, err := cr.ReadAll()
-	checkErr(err)
-	rows = rows[1:]
-	var documents []Document
-	resp := make(chan Response)
-	for _, r := range rows {
-		doc := toDocument(r)
-		go func(document Document) {
-			document, err := createDocument(document, config)
-			resp <- Response{
-				doc: document,
-				err: err,
-			}
-		}(doc)
-	}
-
-	for i := 0; i < len(rows); i++ {
-		r := <-resp
-		if r.err != nil {
-			log.Error(err)
-			continue
-		}
-		r.doc, err = mintNFT(r.doc, config)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		documents = append(documents, r.doc)
-		fmt.Printf("InvoiceNumber: %s DocumentIdentifier: %s NFTToken: %s\n", r.doc.InvoiceNumber, r.doc.DocumentID, r.doc.NFTToken)
-	}
-
 }
 
 func checkErr(err error) {

@@ -1,7 +1,17 @@
 {
-  "centrifuge_id": "0x331c6e2bd3BBA415F1F16B248743be8F81874222",
-  "node_url": "http://localhost:8082",
-  "asset_contract": "0x9cb976c829f20de309a069d186d337ce7e2145db",
-  "nft_registry": "0x6d1f7431be01bca118f1064fcb975d6c0c4c162c",
-  "nft_deposit_address": "0x331c6e2bd3BBA415F1F16B248743be8F81874222"
+  "accounts": [
+    {
+      "id": "0x1Ae9f8fFC29ea8b7Fb82F735e5aee1146536A710",
+      "url": "http://0.0.0.0:8082"
+    },
+    {
+      "id": "0x1Ae9f8fFC29ea8b7Fb82F735e5aee1146536A710",
+      "url": "http://0.0.0.0:8082"
+    }
+  ],
+  "nft_registry": "0x778bcc136767b328f91cddcab7d4b85caa049ee8",
+  "asset_registry": "0xa905baf6812de7563d20d54d7c025ebc775ab3dd",
+  "deposit_address": "0x1Ae9f8fFC29ea8b7Fb82F735e5aee1146536A710",
+  "template_id": "",
+  "fingerprint": ""
 }

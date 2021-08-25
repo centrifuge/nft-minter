@@ -2,17 +2,21 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
-	"strings"
 )
 
+type Account struct {
+	ID  string `json:"id"`
+	URL string `json:"url"`
+}
+
 type Config struct {
-	CentrifugeID      string `json:"centrifuge_id"`
-	NodeURL           string `json:"node_url"`
-	AssetContract     string `json:"asset_contract"`
-	NFTRegistry       string `json:"nft_registry"`
-	NFTDepositAddress string `json:"nft_deposit_address"`
+	Accounts       []Account `json:"accounts"`
+	NFTRegistry    string    `json:"nft_registry"`
+	AssetRegistry  string    `json:"asset_registry"`
+	DepositAddress string    `json:"deposit_address"`
+	TemplateID     string    `json:"template_id"`
+	Fingerprint    string    `json:"fingerprint"`
 }
 
 func loadConfig(file string) (Config, error) {
@@ -24,24 +28,6 @@ func loadConfig(file string) (Config, error) {
 
 	if err := json.Unmarshal(data, &config); err != nil {
 		return Config{}, err
-	}
-
-	if config.CentrifugeID == "" {
-		return Config{}, errors.New("centrifuge ID is not set in config")
-	}
-
-	if config.NodeURL == "" {
-		return Config{}, errors.New("nodeURl is not set in config")
-	} else {
-		config.NodeURL = strings.TrimSuffix(config.NodeURL, "/")
-	}
-
-	if config.AssetContract == "" {
-		return Config{}, errors.New("asset contract is not set in config")
-	}
-
-	if config.NFTRegistry == "" {
-		return Config{}, errors.New("nft registry is not set in config")
 	}
 
 	return config, nil
