@@ -48,6 +48,14 @@ func initAttributes(id, docID string) map[string]AttributeRequest {
 			Type:  "bytes",
 			Value: docID,
 		},
+		"AssetValue": {
+			Type:  "integer",
+			Value: "100000000000000000000",
+		},
+		"RiskScore": {
+			Type:  "integer",
+			Value: "2",
+		},
 	}
 }
 
@@ -55,11 +63,11 @@ func computeAttributes() map[string]AttributeRequest {
 	return map[string]AttributeRequest{
 		"AssetValue": {
 			Type:  "integer",
-			Value: "1100",
+			Value: "100000000000000000000",
 		},
 		"RiskScore": {
 			Type:  "integer",
-			Value: "1",
+			Value: "2",
 		},
 	}
 }

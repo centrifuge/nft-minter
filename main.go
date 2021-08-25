@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func main() {
@@ -45,6 +47,20 @@ func main() {
 
 	fmt.Println("Template ID:", docID)
 	fmt.Println("Template fingerprint:", fingerprint)
+
+	sk, err := fetchSigningKey(alice.URL, alice.ID)
+	checkErr(err)
+	skb, err := hexutil.Decode(sk)
+	checkErr(err)
+	idb, err := hexutil.Decode(alice.ID)
+	checkErr(err)
+	pub := GetAddress(skb)
+	key := append(idb, pub[:]...)
+	fmt.Println("Signature Proof:", fmt.Sprintf("%s.signatures[%s]", "signatures_tree", hexutil.Encode(key)))
+
+	if config.NFTRegistry == "" {
+		return
+	}
 
 	// alice clones template and creates a draft document
 	fmt.Println("Alice creating a document from template")

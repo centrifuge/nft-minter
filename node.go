@@ -123,7 +123,7 @@ func createComputeRule(id, nodeURL, docID, roleID, file string) error {
 }
 
 func fetchAttribute(id, docID, nodeURL, attr string) (string, error) {
-	url := fmt.Sprintf("%s/v1/documents/%s", nodeURL, docID)
+	url := fmt.Sprintf("%s/v2/documents/%s/committed", nodeURL, docID)
 	var response struct {
 		Attributes map[string]struct {
 			Key   string `json:"key"`
@@ -174,7 +174,7 @@ func makeCall(id, url, method string, status int, reader io.Reader, response int
 }
 
 func waitForTransactionSuccess(url, did, jobID string) error {
-	url = fmt.Sprintf("%s/v1/jobs/%s", url, jobID)
+	url = fmt.Sprintf("%s/v2/jobs/%s", url, jobID)
 	c := new(http.Client)
 	for {
 		req, err := http.NewRequest("GET", url, nil)
@@ -195,8 +195,12 @@ func waitForTransactionSuccess(url, did, jobID string) error {
 		}
 
 		var response struct {
-			Message string `json:"message"`
-			Status  string `json:"status"`
+			Finished bool `json:"finished"`
+			Tasks    []struct {
+				RunnerFunc string      `json:"runnerFuncs"` // name of the runnerFuncs
+				Result     interface{} `json:"result"`      // result after the task run
+				Error      string      `json:"error"`       // error after task run
+			}
 		}
 
 		data, err := ioutil.ReadAll(res.Body)
@@ -208,16 +212,16 @@ func waitForTransactionSuccess(url, did, jobID string) error {
 			return err
 		}
 
-		if response.Status == "pending" {
+		if !response.Finished {
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
-		if response.Status == "success" {
-			return nil
+		if message := response.Tasks[len(response.Tasks)-1].Error; message != "" {
+			return errors.New(message)
 		}
 
-		return errors.New(response.Message)
+		return nil
 	}
 }
 
@@ -229,7 +233,7 @@ func riskAndValue(result string) (risk, value *big.Int) {
 }
 
 func fetchSigningKey(url, id string) (string, error) {
-	url = fmt.Sprintf("%s/v1/accounts/%s", url, id)
+	url = fmt.Sprintf("%s/v2/accounts/%s", url, id)
 	res, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -279,7 +283,7 @@ func mintNFT(docID, id, nodeURL, nftRegistry, assetContract, depositAddress stri
 	key := append(idb, pub[:]...)
 	pfs = append(pfs, fmt.Sprintf("%s.signatures[%s]", "signatures_tree", hexutil.Encode(key)))
 
-	url := fmt.Sprintf("%s/v1/nfts/registries/%s/mint", nodeURL, nftRegistry)
+	url := fmt.Sprintf("%s/v2/nfts/registries/%s/mint", nodeURL, nftRegistry)
 	payload := map[string]interface{}{
 		"asset_manager_address": assetContract,
 		"deposit_address":       depositAddress,
