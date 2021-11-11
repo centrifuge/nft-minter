@@ -7,4 +7,4 @@
 Update config.json accordingly
 
 ## Run
-`./nft-minter config.json sample.csv `
+`./nft-minter config.json `
